@@ -249,7 +249,7 @@
             endcapture
           -%}
 
-          <div class="product__secondary-actions {{ secondary_actions_class }}">
+          <!-- <div class="product__secondary-actions {{ secondary_actions_class }}">
             {% liquid
               if section.settings.display_pickup_availabilities
                 render 'pickup-availability-toggle'
@@ -272,7 +272,7 @@
                 </button>
               </div>
             {%- endif -%}
-          </div>
+          </div> -->
 
           {%- if section.settings.show_trust_indicators and trust_indicator_blocks.size > 0 -%}
             <ul class="product__trust-indicators dots--small" data-product-trust-indicators>
