@@ -1,0 +1,723 @@
+{%- render 'script-tags', section_name: 'main-product' -%}
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+
+  capture pricing_class
+    if product.has_only_default_variant
+      if product.compare_at_price > product.price
+        echo 'product__price--on-sale'
+      endif
+    else
+      if product.selected_or_first_available_variant.compare_at_price > product.selected_or_first_available_variant.price
+        echo 'product__price--on-sale'
+      endif
+    endif
+  endcapture
+
+  assign image_sizes = '(min-width: 61.875rem) calc(100vw / 12 * 5), (min-width: 48rem) 50vw, 100vw'
+  assign image_sizes_fullscreen = '(min-width: 61.875rem) calc(100vw / 12 * 8), calc(100vw / 12 * 10)'
+
+  assign payment_blocks = section.blocks | where: 'type', 'payment'
+  assign trust_indicator_blocks = section.blocks | where: 'type', 'trust_indicator'
+  assign accordion_blocks = section.blocks | where: 'type', 'accordion_item'
+-%}
+
+{% capture section_settings %}{"inventory_threshold": {{ section.settings.inventory_threshold | json }}, "display_pickup_availabilities": {{ section.settings.display_pickup_availabilities | json }}, "infinite": {{ section.settings.infinite | json }}, "video_controls": {{ section.settings.video_controls | json }}, "trust_indicators_autoplay_speed": {{ section.settings.trust_indicators_autoplay_speed | json }}}{% endcapture %}
+{% # prettier-ignore-attribute %}
+<div
+  data-section-id="{{ section.id }}"
+  data-section-type="main-product"
+  data-enable-history-state="true"
+  class="product"
+  data-first-variant="{{ current_variant.id }}"
+  data-selected-variant="{{ product.selected_or_first_available_variant.id }}"
+  data-section-settings='{{ section_settings }}'
+  data-sizes="{{ image_sizes }}"
+  data-sizes-fullscreen="{{ image_sizes_fullscreen }}"
+>
+  <div class="product__breadcrumbs product__breadcrumbs--desktop container">
+    {% render 'breadcrumbs' %}
+  </div>
+
+  <div class="container container--flush-max-md">
+    <div class="product__header">
+      <div class="product__media--outer">
+        <div class="product__media">
+          {% render 'product-badges', product: product %}
+
+          <div
+            {% if product.media.size > 1 %}
+              class="product__slideshow dots--white" data-product-slider
+            {% endif %}
+          >
+            {% for media in product.media %}
+              {% case media.media_type %}
+                {% when 'image' %}
+                  {%- liquid
+                    assign img_variants = ''
+                    for image in product.images
+                      if image.src == media.src
+                        for variant in image.variants
+                          assign img_variants = img_variants | append: variant.id
+                          unless forloop.last
+                            assign img_variants = img_variants | append: ','
+                          endunless
+                        endfor
+                        break
+                      endif
+                    endfor
+                  -%}
+
+                  <div
+                    class="product__media-item"
+                    data-product-image-wrapper
+                    data-image-variants="{{ img_variants }}"
+                    data-slide-index="{{ forloop.index0 }}"
+                  >
+                    <div class="product__media-item-wrapper">
+                      <div class="product__media-item-inner">
+                        {%- render 'component-image',
+                          image: media,
+                          aspect_ratio: '2-3',
+                          max_width: 1920,
+                          sizes: image_sizes
+                        -%}
+                      </div>
+                    </div>
+                  </div>
+
+                {% when 'video', 'external_video' %}
+                  {%- liquid
+                    assign autoplay_setting = false
+                    assign controls_setting = true
+
+                    if section.settings.video_controls == 'autoplay'
+                      assign controls_setting = false
+
+                      if forloop.first
+                        assign autoplay_setting = true
+                      endif
+                    endif
+                  -%}
+                  <div
+                    class="product__media-item"
+                    data-product-video-wrapper
+                    data-media-type="{{ media.media_type }}"
+                    data-slide-index="{{ forloop.index0 }}"
+                  >
+                    <div class="product__media-item-wrapper">
+                      <div class="product__media-item-inner">
+                        {%- render 'component-video',
+                          video: media,
+                          aspect_ratio: '2-3',
+                          poster_width: 800,
+                          autoplay: autoplay_setting,
+                          controls: controls_setting
+                        -%}
+                      </div>
+                    </div>
+                  </div>
+
+                {% when 'model' %}
+                  <div class="product__media-item" data-zoom-type="model" data-slide-index="{{ forloop.index0 }}">
+                    <div class="product__media-item-wrapper">
+                      <div class="product__media-item-inner">
+                        <div class="product__media-responsive" style="padding-top: 100%;">
+                          <button
+                            class="btn model-viewer__button"
+                            data-shopify-xr
+                            data-shopify-model3d-id="{{ media.id }}"
+                            data-shopify-title="{{ product.title | escape }}"
+                            aria-label="{{ 'products.product.model_xr' | t }}"
+                            data-shopify-xr-hidden
+                          >
+                            {% render 'icon-model-xr' %}
+                          </button>
+                          {{ media | model_viewer_tag | replace: 'data-shopify-feature', 'data-version' }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="product__media-item" data-slide-index="{{ forloop.index0 }}">
+                    <div class="product__media-item-wrapper">
+                      <div class="product__media-item-inner">
+                        {{ media | media_tag }}
+                      </div>
+                    </div>
+                  </div>
+              {% endcase %}
+            {% endfor %}
+          </div>
+
+          {% if product.media.size > 1 %}
+            <button
+              data-fullscreen-open
+              aria-label="{{ 'products.product.fullscreen' | t }}"
+              title="{{ 'products.product.fullscreen' | t }}"
+              class="btn--fullscreen-open btn-none"
+            >
+              {% render 'icon-zoom-circle' %}
+            </button>
+
+            <button
+              data-fullscreen-close
+              aria-label="{{ 'products.product.close_fullscreen' | t }}"
+              title="{{ 'products.product.close_fullscreen' | t }}"
+              class="btn--fullscreen-close btn-none"
+            >
+              {% render 'icon-cross' %}
+            </button>
+          {% endif %}
+
+          {%- liquid
+            if product.media.size > 1
+              render 'carousel-controls', custom_class: 'controls-container--main controls--white'
+            endif
+          -%}
+        </div>
+
+        {% if product.media.size > 1 and section.settings.include_thumbs == true %}
+          <div class="product__thumbnails-container">
+            <div class="product__thumbnails">
+              <div class="product__thumbnails-slider" data-thumbs-slider>
+                {% for media in product.media %}
+                  <div
+                    class="product__media-thumbnail{% if media.media_type == 'video' or media.media_type == 'external_video' %} product__media-thumbnail--video{% endif %}"
+                    data-thumbnail-id="{{ media.id }}"
+                  >
+                    <div class="product__media-thumbnail-inner">
+                      {%- render 'component-image',
+                        image: media,
+                        aspect_ratio: '2-3',
+                        max_width: 320,
+                        sizes: '(min-width: 61.875rem) 5rem, 1rem'
+                      -%}
+
+                      {%- liquid
+                        if media.media_type == 'video' or media.media_type == 'external_video'
+                          echo '<span class="product__media-icon">'
+                          render 'icon-play'
+                          echo '</span>'
+                        endif
+                      -%}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+
+              {%- liquid
+                if product.media.size > 5
+                  render 'carousel-controls', custom_class: 'controls-container--thumbs'
+                endif
+              -%}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="product__details">
+        <div class="product__breadcrumbs product__breadcrumbs--mobile">
+          {% render 'breadcrumbs' %}
+        </div>
+
+        <div class="product__details--inner">
+          <div class="product__form">
+            {%- liquid
+              assign in_store_only = false
+              if product.metafields.in_store_only.enabled == true
+                assign in_store_only = true
+              endif
+            -%}
+            {% render 'product-form',
+              product: product,
+              section_settings: section.settings,
+              current_variant: current_variant,
+              pricing_class: pricing_class,
+              payment_blocks: payment_blocks,
+              in_store_only: in_store_only
+            %}
+          </div>
+
+          {%- liquid
+            capture secondary_actions_class
+              if in_store_only
+                echo 'product__secondary-actions--in-store'
+              else
+                echo 'product__secondary-actions--online'
+              endif
+            endcapture
+          -%}
+
+          <div class="product__secondary-actions {{ secondary_actions_class }}">
+            {% liquid
+              if section.settings.display_pickup_availabilities
+                render 'pickup-availability-toggle'
+              endif
+            %}
+
+            {%- if section.settings.show_appointment
+              and settings.brauz_book_appointment_script != blank
+              and settings.brauz_app_id != blank
+            -%}
+              <div class="product__book-appointment">
+                <button
+                  type="button"
+                  class="btn--text"
+                  data-book-appointment
+                  data-brauz-id="{{ settings.brauz_app_id }}"
+                >
+                  {{ 'products.product.book_appointment' | t }}
+                  {%- render 'icon-calendar' -%}
+                </button>
+              </div>
+            {%- endif -%}
+          </div>
+
+          {%- if section.settings.show_trust_indicators and trust_indicator_blocks.size > 0 -%}
+            <ul class="product__trust-indicators dots--small" data-product-trust-indicators>
+              {%- for block in trust_indicator_blocks -%}
+                {%- if block.settings.title != blank and forloop.index <= 5 -%}
+                  <li class="product__trust-indicator">
+                    {%- capture trust_indicator -%}
+                      {%- liquid
+                        if block.settings.icon != blank
+                          render 'icon', icon: block.settings.icon
+                        endif
+                      -%}
+                      <div class="product__trust-indicator-content">
+                        <p class="product__trust-indicator-title">{{ block.settings.title }}</p>
+                        <p class="caption">{{ block.settings.content }}</p>
+                      </div>
+                    {%- endcapture -%}
+
+                    {%- if block.settings.link != blank -%}
+                      <a href="{{ block.settings.link }}" class="product__trust-indicator-inner">
+                        {{ trust_indicator }}
+                      </a>
+                    {%- else -%}
+                      <div class="product__trust-indicator-inner">
+                        {{ trust_indicator }}
+                      </div>
+                    {%- endif -%}
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+
+          {% liquid
+            render 'product-accordion', accordion_blocks: accordion_blocks, current_variant: current_variant
+          %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {%- liquid
+    render 'product-payment-drawer', payment_blocks: payment_blocks
+    render 'product-size-guide-drawer'
+
+    if section.settings.display_pickup_availabilities
+      render 'product-pickup-availability-drawer'
+    endif
+  -%}
+
+  {% comment %}
+    Currently there are inconsistencies in the format of product data between
+    {{ product | json }} in liquid and fetching from /products/${handle}.js.
+    The below fixes that inconsistency so we don't require a fetch in the
+    main-product.js section.
+  {% endcomment %}
+  <script>
+    window.productJSON = {{ product | json }};
+    window.productJSON.options = {{ product.options_with_values | json }};
+    window.productJSON.url = {{ product.url | json }};
+    {%- if settings.enable_availability_by_region -%}
+      {%- for variant in product.variants -%}
+        window.productJSON.variants[{{ forloop.index0 }}].available_by_region =
+          {%- if variant.metafields.stock.availability.value != blank -%}
+            {{- variant.metafields.stock.availability.value | json -}};
+          {%- else -%}
+            {};
+          {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+  </script>
+
+  {%- if section.settings.show_low_inventory and settings.enable_availability_by_region != true -%}
+    <script type="application/json" data-product-inventory-json>
+      {
+        {%- for variant in product.variants -%}
+          "{{ variant.id }}": {
+            "management": {{- variant.inventory_management | json -}},
+            "policy": {{- variant.inventory_policy | json -}},
+            "quantity": {{- variant.inventory_quantity | json -}}
+          }
+          {%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      }
+    </script>
+  {%- endif -%}
+
+  {%- assign models = product.media | where: 'media_type', 'model' -%}
+  {%- if models.size > 0 -%}
+    <script type="application/json" data-product-models-json>
+      {{ models | json }}
+    </script>
+  {%- endif -%}
+</div>
+
+{% schema %}
+  {
+    "name": "Main Product",
+    "templates": ["product"],
+    "class": "main-product",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Inventory",
+        "info": "Note: if \"Theme settings > Product > Availability by region\" is enabled, stock messaging will not be displayed."
+      },
+      {
+        "type": "checkbox",
+        "id": "show_low_inventory",
+        "label": "Show low stock",
+        "default": true
+      },
+      {
+        "type": "range",
+        "id": "inventory_threshold",
+        "label": "Low stock threshold",
+        "min": 1,
+        "max": 100,
+        "default": 10,
+        "info": "Low stock text will be displayed if stock is below this value"
+      },
+      {
+        "type": "checkbox",
+        "id": "display_pickup_availabilities",
+        "label": "Show pickup availabilities",
+        "info": "Displays below add to bag button if one or more pickup locations is enabled for selected variant",
+        "default": true
+      },
+      {
+        "type": "header",
+        "content": "Brauz"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_appointment",
+        "label": "Show book an stylist button",
+        "default": true
+      },
+      {
+        "type": "header",
+        "content": "Media slider settings"
+      },
+      {
+        "type": "checkbox",
+        "id": "infinite",
+        "label": "Infinite loop slider",
+        "default": false
+      },
+      {
+        "type": "checkbox",
+        "id": "include_thumbs",
+        "label": "Include thumbnails",
+        "default": true
+      },
+      {
+        "type": "select",
+        "id": "video_controls",
+        "label": "Video controls / autoplay",
+        "info": "Applies to both hosted (mp4) and external (YouTube) videos",
+        "default": "controls",
+        "options": [
+          {
+            "value": "autoplay",
+            "label": "Autoplay"
+          },
+          {
+            "value": "controls",
+            "label": "Controls"
+          }
+        ]
+      },
+      {
+        "type": "header",
+        "content": "Payment Options"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_payment_options",
+        "label": "Show payment options",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "payment_drawer_title",
+        "label": "Drawer Title",
+        "default": "Buy Now Pay Later"
+      },
+      {
+        "type": "header",
+        "content": "Size Guide Drawer"
+      },
+      {
+        "type": "text",
+        "id": "size_guide_title",
+        "label": "Title",
+        "default": "Size Chart"
+      },
+      {
+        "type": "page",
+        "id": "size_guide_page",
+        "label": "Page",
+        "info": "Select the page that has been populated with the size guide content."
+      },
+      {
+        "type": "header",
+        "content": "Trust indicator slider settings"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_trust_indicators",
+        "label": "Show trust indicators slider",
+        "default": true
+      },
+      {
+        "type": "range",
+        "id": "trust_indicators_autoplay_speed",
+        "label": "Autoplay speed",
+        "info": "Seconds between transitions. Zero will disable autoplay",
+        "default": 5,
+        "min": 0,
+        "max": 10,
+        "step": 1
+      }
+    ],
+    "blocks": [
+      {
+        "type": "trust_indicator",
+        "name": "Trust indicator",
+        "settings": [
+          {
+            "type": "select",
+            "id": "icon",
+            "label": "Icon",
+            "options": [
+              {
+                "value": "shipping",
+                "label": "Shipping"
+              },
+              {
+                "value": "returns",
+                "label": "Returns"
+              },
+              {
+                "value": "click-collect",
+                "label": "Click & Collect"
+              },
+              {
+                "value": "likes",
+                "label": "Likes"
+              },
+              {
+                "value": "search",
+                "label": "Search"
+              },
+              {
+                "value": "bag",
+                "label": "Bag"
+              },
+              {
+                "value": "account",
+                "label": "Account"
+              },
+              {
+                "value": "stylist",
+                "label": "Stylist"
+              },
+              {
+                "value": "gift",
+                "label": "Gift"
+              },
+              {
+                "value": "email",
+                "label": "Email"
+              },
+              {
+                "value": "phone",
+                "label": "Phone"
+              },
+              {
+                "value": "globe",
+                "label": "Globe"
+              },
+              {
+                "value": "measure",
+                "label": "Measure"
+              },
+              {
+                "value": "chat",
+                "label": "Chat"
+              },
+              {
+                "value": "share",
+                "label": "Share"
+              },
+              {
+                "value": "lock",
+                "label": "Lock"
+              },
+              {
+                "value": "pin-location",
+                "label": "Pin Location"
+              },
+              {
+                "value": "help",
+                "label": "Help"
+              },
+              {
+                "value": "store",
+                "label": "Store"
+              },
+              {
+                "value": "heart",
+                "label": "Heart"
+              },
+              {
+                "value": "direction",
+                "label": "Direction"
+              },
+              {
+                "value": "calendar",
+                "label": "Calendar"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "title",
+            "label": "Title"
+          },
+          {
+            "type": "inline_richtext",
+            "id": "content",
+            "label": "Content"
+          },
+          {
+            "type": "url",
+            "id": "link",
+            "label": "Link"
+          }
+        ]
+      },
+      {
+        "type": "accordion_item",
+        "name": "Accordion item",
+        "settings": [
+          {
+            "type": "text",
+            "id": "title",
+            "label": "Accordion label"
+          },
+          {
+            "type": "select",
+            "id": "content_type",
+            "label": "Content type",
+            "default": "text",
+            "options": [
+              {
+                "value": "text",
+                "label": "Text"
+              },
+              {
+                "value": "page",
+                "label": "Page"
+              }
+            ]
+          },
+          {
+            "type": "richtext",
+            "id": "content_text",
+            "label": "Content - text"
+          },
+          {
+            "type": "page",
+            "id": "content_page",
+            "label": "Content - page"
+          }
+        ]
+      },
+      {
+        "type": "payment",
+        "name": "Payment drawer item",
+        "settings": [
+          {
+            "type": "select",
+            "id": "icon",
+            "label": "Icon",
+            "options": [
+              {
+                "value": "",
+                "label": "None"
+              },
+              {
+                "value": "afterpay",
+                "label": "Afterpay"
+              },
+              {
+                "value": "amex",
+                "label": "American Express"
+              },
+              {
+                "value": "apple-pay",
+                "label": "Apple Pay"
+              },
+              {
+                "value": "google-pay",
+                "label": "Google Pay"
+              },
+              {
+                "value": "klarna",
+                "label": "Klarna"
+              },
+              {
+                "value": "mastercard",
+                "label": "Mastercard"
+              },
+              {
+                "value": "paypal",
+                "label": "PayPal"
+              },
+              {
+                "value": "shopify-pay",
+                "label": "Shopify Pay"
+              },
+              {
+                "value": "visa",
+                "label": "Visa"
+              },
+              {
+                "value": "zip",
+                "label": "Zip"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "title",
+            "label": "Title"
+          },
+          {
+            "type": "richtext",
+            "id": "text",
+            "label": "Text"
+          }
+        ]
+      }
+    ]
+  }
+{% endschema %}
