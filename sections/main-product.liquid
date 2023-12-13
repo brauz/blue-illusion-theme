@@ -274,6 +274,21 @@
             {%- endif -%}
           </div> -->
 
+          <div
+            id="brauz-find-in-store-config-product-page"
+            data-sd="{{ shop.permanent_domain }}"
+            data-cvi="{{ product.first_available_variant.id }}"
+            data-hodv="{{ product.has_only_default_variant }}"
+            style="display: none; width: 0"
+          ></div>
+          <div id="brauz-find-in-store-product-page"></div>
+
+          {% if shop.permanent_domain == "blue-illusion-aust.myshopify.com" %}
+            <script src="https://d3aq2u4yw77ivo.cloudfront.net/find-in-store/shopify/blueillusion/find-in-store.shopify.blueillusion.prod.js" async></script>
+          {% else %}
+            <script src="https://d3aq2u4yw77ivo.cloudfront.net/find-in-store/shopify/blueillusion/find-in-store.shopify.blueillusion.dev.js" async></script>
+          {% endif %}
+          
           {%- if section.settings.show_trust_indicators and trust_indicator_blocks.size > 0 -%}
             <ul class="product__trust-indicators dots--small" data-product-trust-indicators>
               {%- for block in trust_indicator_blocks -%}
