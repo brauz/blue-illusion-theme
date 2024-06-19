@@ -55,7 +55,14 @@
 
   {%- if label_link -%}
     <div class="button-container">
-      <a class="btn {{ section.settings.button_style }}" href="{{ link }}">
+      <a class="btn {{ section.settings.button_style }}"
+        {%- if section.settings.show_appointment -%}
+          data-book-appointment
+          data-brauz-id="{{ settings.brauz_app_id }}"
+        {%- else -%}
+          href="{{ link_secondary }}"
+        {%- endif -%}
+      >
         {{ label }}
       </a>
       {%- if label_link_secondary -%}
@@ -250,6 +257,12 @@
             "label": "Text"
           }
         ]
+      },
+      {
+        "type": "checkbox",
+        "id": "show_appointment",
+        "label": "Open Brauz appointment booking modal when clicked",
+        "default": false
       },
       {
         "type": "header",
