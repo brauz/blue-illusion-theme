@@ -1,0 +1,289 @@
+{%- render 'script-tags', section_name: 'rich-text' -%}
+{% liquid
+  assign title = section.settings.title
+  assign rich_title = section.settings.rich_title
+  assign text = section.settings.text
+  assign label = section.settings.label
+  assign link = section.settings.link
+  assign label_secondary = section.settings.label_secondary
+  assign link_secondary = section.settings.link_secondary
+  assign label_link = false
+  if label != blank and link != blank
+    assign label_link = true
+  endif
+  assign label_link_secondary = false
+  if label_secondary != blank and link_secondary != blank
+    assign label_link_secondary = true
+  endif
+
+  assign content_max_width_desktop = section.settings.content_max_width_desktop
+
+  assign container_class = 'container'
+
+  unless content_max_width_desktop == 'grid'
+    assign container_class = container_class | append: ' container--' | append: content_max_width_desktop
+  endunless
+
+  if section.settings.text_size_desktop == 'large'
+    assign container_class = container_class | append: ' text-lg--min-md'
+  endif
+
+  if section.settings.text_size_mobile == 'large'
+    assign container_class = container_class | append: ' text-lg--max-md'
+  endif
+
+  assign container_element = 'div'
+  if section.settings.enable_quote_style
+    assign container_element = 'blockquote'
+  endif
+%}
+
+{%- capture section_content -%}
+  {%- if rich_title != blank or title != blank -%}
+    <div class="section__title">
+      {%- if rich_title != blank -%}
+        <div class="rte">{{ rich_title }}</div>
+      {%- else -%}
+        <h2 class="h2">{{ title }}</h2>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- if text != blank -%}
+    <{{ container_element }} class="rte">{{ text }}</{{ container_element }}>
+  {%- endif -%}
+
+  {%- if label_link -%}
+    <div class="button-container">
+      <a class="btn {{ section.settings.button_style }}" href="{{ link }}">
+        {{ label }}
+      </a>
+      {%- if label_link_secondary -%}
+        <a class="btn {{ section.settings.button_style_secondary }}" href="{{ link_secondary }}">
+          {{ label_secondary }}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{%- endcapture -%}
+
+{% if title != blank or text != blank or label_link %}
+  <section data-section-id="{{ section.id }}" data-section-type="rich-text">
+    <div class="{{ container_class }}">
+      {% if content_max_width_desktop == 'grid' %}
+        <div class="page-grid">
+          <div class="page-grid__main">
+            {{ section_content }}
+          </div>
+        </div>
+      {% else %}
+        {{ section_content }}
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    margin-bottom: {{ section.settings.bottom_margin_mobile }}px;
+  }
+
+  @media only screen and (min-width: {{ settings.grid_medium }}px) {
+    #shopify-section-{{ section.id }} {
+      margin-bottom: {{ section.settings.bottom_margin_desktop }}px;
+    }
+  }
+</style>
+
+{% schema %}
+  {
+    "name": "Rich Text",
+    "class": "rich-text",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Section Settings"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_quote_style",
+        "label": "Enable Quote Style",
+        "default": false
+      },
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Heading",
+        "default": "Talk about your brand"
+      },
+      {
+        "type": "richtext",
+        "id": "rich_title",
+        "label": "Heading (Rich Text)",
+        "info": "This will override the heading above if set. Ensure to apply an appropriate tag e.g. 'Heading 2'."
+      },
+      {
+        "type": "richtext",
+        "id": "text",
+        "label": "Text",
+        "default": "<p>Use this text to share information about your brand with your customers. Describe a product, share announcements, or welcome customers to your store.</p>"
+      },
+      {
+        "type": "select",
+        "id": "content_max_width_desktop",
+        "label": "Desktop Content Maximum Width",
+        "default": "sm",
+        "options": [
+          {
+            "value": "sm",
+            "label": "Small"
+          },
+          {
+            "value": "md",
+            "label": "Medium"
+          },
+          {
+            "value": "grid",
+            "label": "Align with 'Main Page' section"
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "text_size_desktop",
+        "label": "Text Size - Desktop",
+        "default": "natural",
+        "options": [
+          {
+            "value": "large",
+            "label": "Large"
+          },
+          {
+            "value": "small",
+            "label": "Small"
+          }
+        ],
+        "default": "large"
+      },
+      {
+        "type": "select",
+        "id": "text_size_mobile",
+        "label": "Text Size - Mobile",
+        "default": "natural",
+        "options": [
+          {
+            "value": "large",
+            "label": "Large"
+          },
+          {
+            "value": "small",
+            "label": "Small"
+          }
+        ],
+        "default": "small"
+      },
+      {
+        "type": "text",
+        "id": "label",
+        "label": "Button label",
+        "default": "Explore"
+      },
+      {
+        "type": "url",
+        "id": "link",
+        "label": "Button link"
+      },
+      {
+        "type": "select",
+        "id": "button_style",
+        "label": "Button style",
+        "default": "",
+        "options": [
+          {
+            "value": "",
+            "label": "Primary"
+          },
+          {
+            "value": "btn--secondary",
+            "label": "Secondary"
+          },
+          {
+            "value": "btn--tertiary",
+            "label": "Tertiary"
+          },
+          {
+            "value": "btn--text-link",
+            "label": "Text"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "id": "label_secondary",
+        "label": "Secondary Button label"
+      },
+      {
+        "type": "url",
+        "id": "link_secondary",
+        "label": "Secondary Button link"
+      },
+      {
+        "type": "select",
+        "id": "button_style_secondary",
+        "label": "Secondary Button style",
+        "default": "",
+        "options": [
+          {
+            "value": "",
+            "label": "Primary"
+          },
+          {
+            "value": "btn--secondary",
+            "label": "Secondary"
+          },
+          {
+            "value": "btn--tertiary",
+            "label": "Tertiary"
+          },
+          {
+            "value": "btn--text-link",
+            "label": "Text"
+          }
+        ]
+      },
+      {
+        "type": "header",
+        "content": "Section Spacing"
+      },
+      {
+        "type": "range",
+        "id": "bottom_margin_desktop",
+        "min": 0,
+        "max": 140,
+        "step": 2,
+        "unit": "px",
+        "label": "Bottom Margin - Desktop",
+        "default": 0
+      },
+      {
+        "type": "range",
+        "id": "bottom_margin_mobile",
+        "min": 0,
+        "max": 140,
+        "step": 2,
+        "unit": "px",
+        "label": "Bottom Margin - Mobile",
+        "default": 0
+      }
+    ],
+    "presets": [
+      {
+        "name": "Rich Text"
+      }
+    ],
+    "enabled_on": {
+      "templates": ["*"],
+      "groups": ["footer"]
+    }
+  }
+{% endschema %}
